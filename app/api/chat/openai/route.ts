@@ -1,9 +1,7 @@
-import { checkApiKey, getServerProfile } from "@/lib/server/server-chat-helpers"
+import { getServerProfile } from "@/lib/server/server-chat-helpers"
 import { ChatSettings } from "@/types"
-import { OpenAIStream, StreamingTextResponse } from "ai"
+import { StreamingTextResponse } from "ai"
 import { ServerRuntime } from "next"
-import OpenAI from "openai"
-import { ChatCompletionCreateParamsBase } from "openai/resources/chat/completions.mjs"
 
 export const runtime: ServerRuntime = "edge"
 
@@ -15,44 +13,38 @@ export async function POST(request: Request) {
   }
 
   try {
-    const profile = await getServerProfile()
-
-    checkApiKey(profile.openai_api_key, "OpenAI")
-
-    const openai = new OpenAI({
-      apiKey: profile.openai_api_key || "",
-      organization: profile.openai_organization_id
+    // Call your locally running FastAPI backend instead of OpenAI
+    const response = await fetch("http://127.0.0.1:8000/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        prompt: messages[messages.length - 1]?.content // Send the latest message
+      })
     })
 
-    const response = await openai.chat.completions.create({
-      model: chatSettings.model as ChatCompletionCreateParamsBase["model"],
-      messages: messages as ChatCompletionCreateParamsBase["messages"],
-      temperature: chatSettings.temperature,
-      max_tokens:
-        chatSettings.model === "gpt-4-vision-preview" ||
-        chatSettings.model === "gpt-4o"
-          ? 4096
-          : null, // TODO: Fix
-      stream: true
-    })
+    if (!response.ok) {
+      throw new Error(`FastAPI Error: ${response.statusText}`)
+    }
 
-    const stream = OpenAIStream(response)
+    const data = await response.json()
+
+    // Assuming FastAPI returns { "response": "Generated text" }
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(data.response)
+        controller.close()
+      }
+    })
 
     return new StreamingTextResponse(stream)
   } catch (error: any) {
-    let errorMessage = error.message || "An unexpected error occurred"
-    const errorCode = error.status || 500
+    console.error("Error calling FastAPI:", error)
 
-    if (errorMessage.toLowerCase().includes("api key not found")) {
-      errorMessage =
-        "OpenAI API Key not found. Please set it in your profile settings."
-    } else if (errorMessage.toLowerCase().includes("incorrect api key")) {
-      errorMessage =
-        "OpenAI API Key is incorrect. Please fix it in your profile settings."
-    }
-
-    return new Response(JSON.stringify({ message: errorMessage }), {
-      status: errorCode
-    })
+    return new Response(
+      JSON.stringify({ message: "Failed to connect to local AI model" }),
+      { status: 500 }
+    )
   }
 }
