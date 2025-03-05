@@ -1,5 +1,12 @@
 import { ChatbotUIContext } from "@/context/context"
-import { IconCheck, IconCopy, IconEdit, IconRepeat } from "@tabler/icons-react"
+import {
+  IconCheck,
+  IconCopy,
+  IconEdit,
+  IconThumbUp,
+  IconThumbDown,
+  IconRepeat
+} from "@tabler/icons-react"
 import { FC, useContext, useEffect, useState } from "react"
 import { WithTooltip } from "../ui/with-tooltip"
 
@@ -61,7 +68,34 @@ export const MessageActions: FC<MessageActionsProps> = ({
           }
         />
       )} */}
-
+      {isAssistant && isHovering && (
+        <WithTooltip
+          delayDuration={1000}
+          side="bottom"
+          display={<div>Give positive feedback</div>}
+          trigger={
+            <IconThumbUp
+              className="cursor-pointer hover:opacity-50"
+              size={MESSAGE_ICON_SIZE}
+              onClick={onEdit}
+            />
+          }
+        />
+      )}
+      {isAssistant && isHovering && (
+        <WithTooltip
+          delayDuration={1000}
+          side="bottom"
+          display={<div>Give negative feedback</div>}
+          trigger={
+            <IconThumbDown
+              className="cursor-pointer hover:opacity-50"
+              size={MESSAGE_ICON_SIZE}
+              onClick={onEdit}
+            />
+          }
+        />
+      )}
       {!isAssistant && isHovering && (
         <WithTooltip
           delayDuration={1000}
