@@ -201,52 +201,51 @@ export const handleHostedChat = async (
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>,
   setToolInUse: React.Dispatch<React.SetStateAction<string>>
 ) => {
-  const provider =
-    modelData.provider === "openai" && profile.use_azure_openai
-      ? "azure"
-      : modelData.provider
-
-  let draftMessages = await buildFinalMessages(payload, profile, chatImages)
-
-  let formattedMessages: any[] = []
-  if (provider === "google") {
-    formattedMessages = await adaptMessagesForGoogleGemini(
-      payload,
-      draftMessages
-    )
-  } else {
-    formattedMessages = draftMessages
-  }
-
-  const apiEndpoint =
-    provider === "custom" ? "/api/chat/custom" : `/api/chat/${provider}`
-
+  // Sample request body
   const requestBody = {
-    chatSettings: payload.chatSettings,
-    messages: formattedMessages,
-    customModelId: provider === "custom" ? modelData.hostedId : ""
+    userMessage: payload.chatMessages,
+    chatSettings: payload.chatSettings
+    // ... your other fields
   }
 
+  // Use the environment variable. Make sure NEXT_PUBLIC_FASTAPI_ENDPOINT is defined.
+  // In your .env, it might look like: NEXT_PUBLIC_FASTAPI_ENDPOINT=http://127.0.0.1:8000
+  const fastapiEndpoint = process.env.NEXT_PUBLIC_FASTAPI_ENDPOINT
+
+  // Make sure we handle cases where the environment var is missing or not set
+  if (!fastapiEndpoint) {
+    throw new Error(
+      "NEXT_PUBLIC_FASTAPI_ENDPOINT environment variable is not set."
+    )
+  }
+
+  // Append the route
+  const apiEndpoint = `${fastapiEndpoint}/dummy-chat`
+
+  // This calls your streaming endpoint. The rest is unchanged from your prior logic.
   const response = await fetchChatResponse(
     apiEndpoint,
     requestBody,
-    true,
+    true, // isHosted
     newAbortController,
     setIsGenerating,
     setChatMessages
   )
 
-  return await processResponse(
+  // Process the streamed response
+  const finalText = await processResponse(
     response,
     isRegeneration
       ? payload.chatMessages[payload.chatMessages.length - 1]
       : tempAssistantChatMessage,
-    true,
+    true, // isHosted
     newAbortController,
     setFirstTokenReceived,
     setChatMessages,
     setToolInUse
   )
+
+  return finalText
 }
 
 export const fetchChatResponse = async (
