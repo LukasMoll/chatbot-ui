@@ -9,14 +9,12 @@ import { cn } from "@/lib/utils"
 import { ContentType } from "@/types"
 import { IconChevronCompactRight } from "@tabler/icons-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { FC, useState, useEffect } from "react"
+import { FC, useState } from "react"
 import { useSelectFileHandler } from "../chat/chat-hooks/use-select-file-handler"
 import { CommandK } from "../utility/command-k"
-import dynamic from "next/dynamic"
 import { GraphSidebar } from "@/components/ui/graph-sidebar"
 
 export const SIDEBAR_WIDTH = 350
-export const RIGHT_SIDEBAR_WIDTH = 800
 
 interface DashboardProps {
   children: React.ReactNode
@@ -24,13 +22,12 @@ interface DashboardProps {
 
 export const Dashboard: FC<DashboardProps> = ({ children }) => {
   // Hotkey to toggle left sidebar.
-  useHotkey("s", () => setShowSidebar(prevState => !prevState))
+  useHotkey("s", () => setShowSidebar(prev => !prev))
 
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
   const tabValue = searchParams.get("tab") || "chats"
-
   const { handleSelectDeviceFile } = useSelectFileHandler()
 
   const [contentType, setContentType] = useState<ContentType>(
@@ -42,58 +39,50 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
   const [showRightSidebar, setShowRightSidebar] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
 
-  const onFileDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const files = event.dataTransfer.files
-    const file = files[0]
+  const onFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
     handleSelectDeviceFile(file)
     setIsDragging(false)
   }
 
-  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
     setIsDragging(true)
   }
 
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
     setIsDragging(false)
   }
 
-  const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
   }
 
   const handleToggleSidebar = () => {
-    setShowSidebar(prevState => !prevState)
+    setShowSidebar(prev => !prev)
     localStorage.setItem("showSidebar", String(!showSidebar))
   }
 
   const handleToggleRightSidebar = () => {
-    setShowRightSidebar(prevState => !prevState)
+    setShowRightSidebar(prev => !prev)
     localStorage.setItem("showRightSidebar", String(!showRightSidebar))
   }
 
   return (
-    <div className="flex size-full">
+    <div className="flex size-full overflow-hidden">
       <CommandK />
 
       {/* Left Sidebar */}
       {showSidebar && (
-        <div
-          className="border-r-2 duration-200 dark:border-none"
-          style={{
-            minWidth: `${SIDEBAR_WIDTH}px`,
-            maxWidth: `${SIDEBAR_WIDTH}px`,
-            width: `${SIDEBAR_WIDTH}px`
-          }}
-        >
+        <div className="flex-none" style={{ width: SIDEBAR_WIDTH }}>
           <Tabs
             className="flex h-full"
             value={contentType}
-            onValueChange={tabValue => {
-              setContentType(tabValue as ContentType)
-              router.replace(`${pathname}?tab=${tabValue}`)
+            onValueChange={val => {
+              setContentType(val as ContentType)
+              router.replace(`${pathname}?tab=${val}`)
             }}
           >
             <SidebarSwitcher onContentTypeChange={setContentType} />
@@ -104,7 +93,7 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
 
       {/* Main Content */}
       <div
-        className="bg-muted/50 relative flex flex-1 flex-col"
+        className="bg-muted/50 relative flex flex-1 flex-col overflow-auto"
         onDrop={onFileDrop}
         onDragOver={onDragOver}
         onDragEnter={handleDragEnter}
@@ -120,10 +109,10 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
 
         {/* Left Toggle Button */}
         <Button
-          className={cn("absolute left-[4px] top-[50%] z-10 cursor-pointer")}
-          style={{
-            transform: showSidebar ? "rotate(180deg)" : "rotate(0deg)"
-          }}
+          className={cn(
+            "absolute left-2 top-1/2 z-10 -translate-y-1/2 cursor-pointer"
+          )}
+          style={{ transform: showSidebar ? "rotate(180deg)" : "rotate(0deg)" }}
           variant="ghost"
           size="icon"
           onClick={handleToggleSidebar}
@@ -133,7 +122,9 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
 
         {/* Right Toggle Button */}
         <Button
-          className={cn("absolute right-[4px] top-[50%] z-10 cursor-pointer")}
+          className={cn(
+            "absolute right-2 top-1/2 z-10 -translate-y-1/2 cursor-pointer"
+          )}
           variant="ghost"
           size="icon"
           onClick={handleToggleRightSidebar}
@@ -142,10 +133,10 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
         </Button>
       </div>
 
-      {/* Right Sidebar with ForceGraph3D */}
+      {/* Right Sidebar */}
       {showRightSidebar && (
-        <div className="bg-muted/50 relative h-full w-1/2">
-          <GraphSidebar />
+        <div className="bg-muted/50 h-full w-1/2 flex-none">
+          <GraphSidebar onClose={() => setShowRightSidebar(false)} />
         </div>
       )}
     </div>
