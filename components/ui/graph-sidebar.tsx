@@ -28,7 +28,7 @@ export const GraphSidebar: React.FC<GraphSidebarProps> = ({ onClose }) => {
 
   return (
     <div className="relative size-full">
-      {/* Close Button centered vertically on the left side of the Graph Panel */}
+      {/* Close Button: centered vertically on the left side of the graph panel */}
       <Button
         className="absolute left-2 top-1/2 z-20 -translate-y-1/2 cursor-pointer"
         variant="ghost"

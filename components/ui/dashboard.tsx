@@ -36,7 +36,8 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
   const [showSidebar, setShowSidebar] = useState(
     localStorage.getItem("showSidebar") === "true"
   )
-  const [showRightSidebar, setShowRightSidebar] = useState(false)
+  // Use a single state to control graph panel width in percent: 0 (closed), 50, or 100.
+  const [graphPanelWidth, setGraphPanelWidth] = useState<number>(0)
   const [isDragging, setIsDragging] = useState(false)
 
   const onFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -65,9 +66,21 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
     localStorage.setItem("showSidebar", String(!showSidebar))
   }
 
+  // External right toggle button:
+  // Closed (0)  -> Open at 50%
+  // 50%         -> Expand to 100%
+  // 100%        -> Shrink to 50%
   const handleToggleRightSidebar = () => {
-    setShowRightSidebar(prev => !prev)
-    localStorage.setItem("showRightSidebar", String(!showRightSidebar))
+    if (graphPanelWidth === 0) {
+      setGraphPanelWidth(50)
+      localStorage.setItem("graphPanelWidth", "50")
+    } else if (graphPanelWidth === 50) {
+      setGraphPanelWidth(100)
+      localStorage.setItem("graphPanelWidth", "100")
+    } else if (graphPanelWidth === 100) {
+      setGraphPanelWidth(50)
+      localStorage.setItem("graphPanelWidth", "50")
+    }
   }
 
   return (
@@ -134,9 +147,25 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
       </div>
 
       {/* Right Sidebar */}
-      {showRightSidebar && (
-        <div className="bg-muted/50 h-full w-1/2 flex-none">
-          <GraphSidebar onClose={() => setShowRightSidebar(false)} />
+      {graphPanelWidth > 0 && (
+        <div
+          className="bg-muted/50 h-full flex-none"
+          style={{ width: `${graphPanelWidth}vw` }}
+        >
+          <GraphSidebar
+            onClose={() => {
+              // Internal close button:
+              // If currently 100%, shrink to 50%
+              // If currently 50%, close it (set width to 0)
+              if (graphPanelWidth === 100) {
+                setGraphPanelWidth(50)
+                localStorage.setItem("graphPanelWidth", "50")
+              } else if (graphPanelWidth === 50) {
+                setGraphPanelWidth(0)
+                localStorage.setItem("graphPanelWidth", "0")
+              }
+            }}
+          />
         </div>
       )}
     </div>
