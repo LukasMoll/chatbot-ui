@@ -1,30 +1,51 @@
 "use client"
 
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import graphData from "./blocks.json"
 import { Button } from "@/components/ui/button"
 import { IconChevronCompactRight } from "@tabler/icons-react"
 
-const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), {
+// Dynamically import the wrapper component
+const ForceGraph3DWrapper = dynamic(() => import("./ForceGraph3DWrapper"), {
   ssr: false
 })
 
 interface GraphSidebarProps {
   onClose: () => void
+  graphPanelWidth: number
 }
 
-export const GraphSidebar: React.FC<GraphSidebarProps> = ({ onClose }) => {
-  const fgRef = useRef<any>(null)
+export const GraphSidebar: React.FC<GraphSidebarProps> = ({
+  onClose,
+  graphPanelWidth
+}) => {
+  const [graphInstance, setGraphInstance] = useState<any>(null)
 
   useEffect(() => {
+    // Call zoomToFit after a delay once the graph instance is ready.
     const timer = setTimeout(() => {
-      if (fgRef.current && graphData) {
-        fgRef.current.zoomToFit(1000, 50)
+      if (graphInstance && graphData) {
+        graphInstance.zoomToFit(1000, 50)
       }
     }, 500)
-    return () => clearTimeout(timer)
-  }, [])
+
+    // Set up a live logging loop for the camera position.
+    let frameId: number
+    const logCameraPosition = () => {
+      frameId = requestAnimationFrame(logCameraPosition)
+    }
+    logCameraPosition()
+
+    return () => {
+      clearTimeout(timer)
+      cancelAnimationFrame(frameId)
+    }
+  }, [graphInstance])
+
+  // Determine the transform style based on the panel width.
+  const transformValue =
+    graphPanelWidth === 50 ? "translateX(-50%)" : "translateX(0%)"
 
   return (
     <div className="relative size-full">
@@ -37,13 +58,21 @@ export const GraphSidebar: React.FC<GraphSidebarProps> = ({ onClose }) => {
       >
         <IconChevronCompactRight size={24} />
       </Button>
-      <ForceGraph3D
-        ref={fgRef}
-        graphData={graphData}
-        nodeLabel={(node: any) => `${node.user}: ${node.description}`}
-        nodeAutoColorBy="user"
-        linkDirectionalParticles={1}
-      />
+      {/*
+          The outer div here can use clipPath if you need to hide part of the graph.
+          For now, it’s not clipping anything since inset is all zeros.
+      */}
+      <div style={{ clipPath: "inset(0 0 0 0%)" }}>
+        <div style={{ transform: transformValue }}>
+          <ForceGraph3DWrapper
+            onGraphReady={setGraphInstance}
+            graphData={graphData}
+            nodeLabel={(node: any) => `${node.user}: ${node.description}`}
+            nodeAutoColorBy="user"
+            linkDirectionalParticles={1}
+          />
+        </div>
+      </div>
     </div>
   )
 }

@@ -165,6 +165,7 @@ export const Dashboard: FC<DashboardProps> = ({ children }) => {
                 localStorage.setItem("graphPanelWidth", "0")
               }
             }}
+            graphPanelWidth={graphPanelWidth}
           />
         </div>
       )}
